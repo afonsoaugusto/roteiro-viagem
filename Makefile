@@ -1,7 +1,8 @@
 PODMAN ?= podman
-COMPOSE ?= $(PODMAN) compose
 NODE_IMG ?= docker.io/library/node:22-alpine
 PORT ?= 3000
+CONTAINER ?= roteiro-viagem-dev
+NODE_MODULES_VOL ?= roteiro-viagem_node_modules
 
 .PHONY: help install dev up down logs seed build
 
@@ -18,13 +19,23 @@ install:
 	$(PODMAN) run --rm -v "$(CURDIR)":/app -w /app $(NODE_IMG) npm install
 
 dev up:
-	$(COMPOSE) up --build
+	$(PODMAN) run --rm -it \
+		--name $(CONTAINER) \
+		-p $(PORT):3000 \
+		--env-file .env.local \
+		-e HOSTNAME=0.0.0.0 \
+		-e PORT=3000 \
+		-v "$(CURDIR)":/app \
+		-v $(NODE_MODULES_VOL):/app/node_modules \
+		-w /app \
+		$(NODE_IMG) \
+		sh -c "npm install && npm run dev"
 
 down:
-	$(COMPOSE) down
+	-$(PODMAN) stop $(CONTAINER)
 
 logs:
-	$(COMPOSE) logs -f app
+	$(PODMAN) logs -f $(CONTAINER)
 
 seed:
 	$(PODMAN) run --rm --env-file .env.local -v "$(CURDIR)":/app -w /app $(NODE_IMG) npm run seed
