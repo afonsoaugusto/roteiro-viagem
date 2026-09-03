@@ -27,12 +27,28 @@ make seed
 
 ## Vercel
 
-Variáveis no projeto:
+Projeto: [roteiro-viagem](https://vercel.com/afonso-rodrigues/roteiro-viagem)  
+URL: **https://roteiro-viagem-henna.vercel.app**
 
-- `MONGODB_URI`
-- `MONGODB_DB=viagem`
-- `APP_USER`
-- `APP_PASSWORD`
-- `SESSION_SECRET`
+### Variáveis de ambiente (Settings → Environment Variables)
 
-No MongoDB Atlas, libere acesso de rede para o app na Vercel (`0.0.0.0/0` ou os IPs da plataforma).
+| Variável | Valor |
+|----------|-------|
+| `MONGODB_URI` | `mongodb+srv://viagem:...@cluster0.9qmia0k.mongodb.net/viagem?...` |
+| `MONGODB_DB` | `viagem` |
+| `APP_USER` | usuário de login (ex.: `roteiro`) |
+| `APP_PASSWORD` | senha de login |
+| `SESSION_SECRET` | string aleatória longa |
+
+Credenciais locais de teste ficam em `.login-local` (não vai pro git).
+
+No **MongoDB Atlas** → Network Access: liberar `0.0.0.0/0` (ou IPs da Vercel).
+
+### Publicar atualizações
+
+O projeto Vercel está ligado ao repo `afonsoaugusto/roteiro-viagem`. Para deploy automático:
+
+```sh
+git push origin main
+```
+
