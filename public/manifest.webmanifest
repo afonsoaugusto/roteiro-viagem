@@ -1,0 +1,9 @@
+{
+  "name": "Roteiro",
+  "short_name": "Roteiro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4ead8",
+  "theme_color": "#0f3d3e",
+  "lang": "pt-BR"
+}

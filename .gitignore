@@ -65,7 +65,10 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
+.vercel
+.DS_Store
+.login-local
+
 .env
 .env.*
 !.env.example
