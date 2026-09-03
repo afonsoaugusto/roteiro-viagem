@@ -28,7 +28,13 @@ make seed
 ## Vercel
 
 Projeto: [roteiro-viagem](https://vercel.com/afonso-rodrigues/roteiro-viagem)  
-URL: **https://roteiro-viagem-henna.vercel.app**
+URL de produção: **https://roteiro-viagem.vercel.app** (após configurar domínio e proteção abaixo)
+
+O build no GitHub/Vercel está passando. Se você vê `404 NOT_FOUND` (texto plano da Vercel) ou outro site no domínio, ajuste no dashboard:
+
+1. **Deployment Protection** → Settings → Deployment Protection → em **Production**, desative “Vercel Authentication” (deixe proteção só em Preview, se quiser).
+2. **Domínio** → Settings → Domains → confirme que `roteiro-viagem.vercel.app` está neste projeto (não em outro). O deploy de produção deve estar ligado ao branch `main`.
+3. URLs antigas de deploy (`roteiro-viagem-henna.vercel.app`, etc.) expiram quando o deploy é removido — use o domínio de produção do projeto.
 
 ### Variáveis de ambiente (Settings → Environment Variables)
 
