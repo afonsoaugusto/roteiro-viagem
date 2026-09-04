@@ -1,38 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createHmac, timingSafeEqual } from "crypto";
+import { SESSION_COOKIE, isValidSession } from "@/lib/session";
 
-const COOKIE = "roteiro_session";
+const PUBLIC_PATHS = new Set(["/favicon.ico", "/manifest.webmanifest", "/icon.svg"]);
 
-function isValid(token: string | undefined) {
-  const secret = process.env.SESSION_SECRET;
-  if (!token || !secret) return false;
-  const [value, signature] = token.split(".");
-  if (!value || !signature) return false;
-  const expected = createHmac("sha256", secret).update(value).digest("base64url");
-  try {
-    return (
-      value === "ok" &&
-      timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-    );
-  } catch {
-    return false;
-  }
-}
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico" ||
-    pathname === "/manifest.webmanifest" ||
-    pathname === "/icon.svg"
-  ) {
+  if (pathname.startsWith("/login") || PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 
-  if (!isValid(request.cookies.get(COOKIE)?.value)) {
+  const valid = await isValidSession(
+    request.cookies.get(SESSION_COOKIE)?.value,
+    process.env.SESSION_SECRET,
+  );
+  if (!valid) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
@@ -43,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image).*)"],
+  matcher: ["/((?!_next/static|_next/image|_next/data).*)"],
 };

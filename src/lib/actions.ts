@@ -8,7 +8,7 @@ import { addAction, deleteAction, toggleAction } from "./queries";
 export async function loginAction(formData: FormData) {
   const user = String(formData.get("user") ?? "");
   const password = String(formData.get("password") ?? "");
-  if (!isValidCredentials(user, password)) {
+  if (!(await isValidCredentials(user, password))) {
     redirect("/login?error=1");
   }
   await createSession();
