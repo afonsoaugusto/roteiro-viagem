@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useOptimistic, useState, useTransition } from "react";
-import { addActionForm, deleteActionForm, logoutAction, toggleActionState } from "@/lib/actions";
+import { addActionForm, deleteActionForm, toggleActionState } from "@/lib/actions";
 import type { Trip, TripAction } from "@/lib/types";
 
 const CATEGORY: Record<TripAction["category"], string> = {
@@ -31,7 +32,7 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
     const done = !item.done;
     startTransition(async () => {
       markDone({ id, done });
-      await toggleActionState(id, done);
+      await toggleActionState(trip.slug, id, done);
     });
   };
 
@@ -54,17 +55,14 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
       <header className="sticky top-0 z-10 border-b border-[#0f3d3e]/10 bg-[#f4ead8]/90 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.18em] text-[#0f3d3e]/60 uppercase">Roteiro</p>
+            <Link href="/" className="text-xs text-[#0f3d3e]/70 no-underline">
+              ← Viagens
+            </Link>
             <h1 className="text-3xl leading-tight text-[#0f3d3e]" style={{ fontFamily: "var(--font-display)" }}>
               {trip.title}
             </h1>
             <p className="mt-1 text-sm text-[#163032]/70">{trip.dates}</p>
           </div>
-          <form action={logoutAction}>
-            <button type="submit" className="rounded-full px-3 py-2 text-sm text-[#0f3d3e]/70">
-              Sair
-            </button>
-          </form>
         </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#0f3d3e]/10">
           <div
@@ -162,8 +160,9 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
                       href={item.placeUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex rounded-full bg-[#0f3d3e] px-3 py-1.5 text-sm text-white"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#14575a] px-3 py-1.5 text-sm font-medium text-white no-underline active:bg-[#0f3d3e]"
                     >
+                      <span aria-hidden>📍</span>
                       {item.placeName ?? "Abrir local"}
                     </a>
                   ) : item.placeName ? (
@@ -172,7 +171,8 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
                   {item.custom && item._id ? (
                     <form action={deleteActionForm} className="mt-3">
                       <input type="hidden" name="id" value={item._id} />
-                      <button type="submit" className="text-sm text-[#c45c3e]">
+                      <input type="hidden" name="tripSlug" value={trip.slug} />
+                      <button type="submit" className="text-sm text-[#a8452c]">
                         Remover
                       </button>
                     </form>
@@ -210,6 +210,7 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
             <h3 className="text-xl text-[#0f3d3e]" style={{ fontFamily: "var(--font-display)" }}>
               Nova ação
             </h3>
+            <input type="hidden" name="tripSlug" value={trip.slug} />
             <input type="hidden" name="dayKey" value={day} />
             <input type="hidden" name="dayLabel" value={currentDay?.label ?? day} />
             <label className="mt-4 block text-sm">

@@ -1,16 +1,13 @@
-// Web Crypto only: this module runs both in the Node.js runtime (server
-// actions, pages) and in the Edge runtime (middleware).
+// Web Crypto only: este módulo roda tanto no Node (server actions, páginas)
+// quanto no Edge Runtime (middleware). O middleware valida a assinatura sem
+// tocar no banco, então o nome do usuário viaja dentro do próprio token.
+
+import { decodeText, encodeText, encoder, safeEqual, toBase64Url } from "./encoding";
 
 export const SESSION_COOKIE = "roteiro_session";
-export const SESSION_VALUE = "ok";
 
-const encoder = new TextEncoder();
-
-function toBase64Url(bytes: Uint8Array) {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+// Sessões emitidas antes do cadastro de usuários usavam este payload fixo.
+const LEGACY_PAYLOAD = "ok";
 
 export async function hmac(secret: string, value: string) {
   const key = await crypto.subtle.importKey(
@@ -24,29 +21,31 @@ export async function hmac(secret: string, value: string) {
   return toBase64Url(new Uint8Array(signature));
 }
 
-function equals(left: string, right: string) {
-  if (left.length !== right.length) return false;
-  let diff = 0;
-  for (let i = 0; i < left.length; i += 1) {
-    diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
+export async function signSession(secret: string, username: string) {
+  const payload = encodeText(username);
+  return `${payload}.${await hmac(secret, payload)}`;
+}
+
+/** Devolve o usuário da sessão, ou null se o token for inválido. */
+export async function readSession(
+  token: string | undefined,
+  secret: string | undefined,
+): Promise<string | null> {
+  if (!token || !secret) return null;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  if (!safeEqual(signature, await hmac(secret, payload))) return null;
+  if (payload === LEGACY_PAYLOAD) return process.env.APP_USER ?? LEGACY_PAYLOAD;
+  try {
+    return decodeText(payload) || null;
+  } catch {
+    return null;
   }
-  return diff === 0;
 }
 
-export async function signSession(secret: string) {
-  return `${SESSION_VALUE}.${await hmac(secret, SESSION_VALUE)}`;
-}
-
-export async function isValidSession(token: string | undefined, secret: string | undefined) {
-  if (!token || !secret) return false;
-  const [value, signature] = token.split(".");
-  if (value !== SESSION_VALUE || !signature) return false;
-  return equals(signature, await hmac(secret, value));
-}
-
-// Compares secrets through their digests so the check does not depend on the
-// plaintext length.
+// Compara segredos pelos digests, para o resultado não depender do tamanho
+// do texto em claro.
 export async function matchesSecret(secret: string, left: string, right: string) {
   const [a, b] = await Promise.all([hmac(secret, left), hmac(secret, right)]);
-  return equals(a, b);
+  return safeEqual(a, b);
 }

@@ -30,4 +30,16 @@ export type Trip = {
   subtitle: string;
   dates: string;
   days: TripDay[];
+  /** Viagens criadas pelo app podem ser removidas; a de exemplo não. */
+  custom?: boolean;
+};
+
+export type TripSummary = Trip & {
+  done: number;
+  total: number;
+};
+
+export type AppUser = {
+  username: string;
+  createdAt: string | null;
 };
