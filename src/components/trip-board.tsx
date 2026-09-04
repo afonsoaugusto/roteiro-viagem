@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { addActionForm, deleteActionForm, logoutAction, toggleActionState } from "@/lib/actions";
 import type { Trip, TripAction } from "@/lib/types";
 
@@ -16,12 +16,31 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
   const [day, setDay] = useState(trip.days[0]?.key ?? "antes");
   const [adding, setAdding] = useState(false);
 
-  const counts = useMemo(() => {
-    const done = actions.filter((a) => a.done).length;
-    return { done, total: actions.length };
-  }, [actions]);
+  // Marca o item na hora e deixa o servidor confirmar depois; sem isso o
+  // usuário fica esperando o round trip inteiro para ver o check mudar.
+  const [items, markDone] = useOptimistic(
+    actions,
+    (state, { id, done }: { id: string; done: boolean }) =>
+      state.map((a) => (a._id === id ? { ...a, done } : a)),
+  );
+  const [, startTransition] = useTransition();
 
-  const visible = actions.filter((a) => {
+  const toggle = (item: TripAction) => {
+    const id = item._id;
+    if (!id) return;
+    const done = !item.done;
+    startTransition(async () => {
+      markDone({ id, done });
+      await toggleActionState(id, done);
+    });
+  };
+
+  const counts = useMemo(() => {
+    const done = items.filter((a) => a.done).length;
+    return { done, total: items.length };
+  }, [items]);
+
+  const visible = items.filter((a) => {
     if (a.dayKey !== day) return false;
     if (filter === "open") return !a.done;
     if (filter === "done") return a.done;
@@ -58,7 +77,7 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
         </p>
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {trip.days.map((d) => {
-            const dayActions = actions.filter((a) => a.dayKey === d.key);
+            const dayActions = items.filter((a) => a.dayKey === d.key);
             const open = dayActions.filter((a) => !a.done).length;
             const selected = day === d.key;
             return (
@@ -116,11 +135,8 @@ export function TripBoard({ trip, actions }: { trip: Trip; actions: TripAction[]
                   type="button"
                   aria-pressed={item.done}
                   aria-label={item.done ? "Marcar como pendente" : "Marcar como feito"}
-                  onClick={() => {
-                    if (!item._id) return;
-                    void toggleActionState(item._id, !item.done);
-                  }}
-                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+                  onClick={() => toggle(item)}
+                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                     item.done
                       ? "border-[#2f6b4f] bg-[#2f6b4f] text-white"
                       : "border-[#0f3d3e]/30 bg-white"

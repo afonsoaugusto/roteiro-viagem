@@ -31,31 +31,41 @@ export async function seedIfEmpty() {
   );
 
   const actionCol = await actions();
-  const seed = salvadorSeedActions();
-  for (const item of seed) {
-    const { seedKey, ...rest } = item;
-    await actionCol.updateOne(
-      { seedKey },
-      { $setOnInsert: { ...rest, seedKey, _id: new ObjectId() } },
-      { upsert: true },
-    );
-  }
+  await actionCol.bulkWrite(
+    salvadorSeedActions().map(({ seedKey, ...rest }) => ({
+      updateOne: {
+        filter: { seedKey },
+        update: { $setOnInsert: { ...rest, seedKey } },
+        upsert: true,
+      },
+    })),
+    { ordered: false },
+  );
 }
 
 function serialize(doc: ActionDoc): TripAction {
   return { ...doc, _id: doc._id.toHexString() };
 }
 
+// O seed só roda quando o banco está de fato vazio: mantê-lo no caminho de
+// leitura custava dezenas de idas ao Mongo em cada render.
 export async function getTrip(slug: string) {
-  await seedIfEmpty();
   const tripCol = await trips();
+  const trip = await tripCol.findOne({ slug });
+  if (trip) return trip;
+  await seedIfEmpty();
   return tripCol.findOne({ slug });
 }
 
 export async function listActions(slug: string) {
-  await seedIfEmpty();
   const col = await actions();
-  const docs = await col.find({ tripSlug: slug }).sort({ dayKey: 1, sort: 1 }).toArray();
+  const find = async () =>
+    col.find({ tripSlug: slug }).sort({ dayKey: 1, sort: 1 }).toArray();
+  let docs = await find();
+  if (docs.length === 0) {
+    await seedIfEmpty();
+    docs = await find();
+  }
   return docs.map(serialize);
 }
 

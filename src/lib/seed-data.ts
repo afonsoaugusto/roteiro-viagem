@@ -55,7 +55,7 @@ export const SALVADOR_TRIP: Trip = {
   ],
 };
 
-const actions: Omit<TripAction, "done" | "custom" | "tripSlug">[] = [
+const actions: Omit<TripAction, "_id" | "done" | "custom" | "tripSlug">[] = [
   {
     dayKey: "antes",
     dayLabel: "Antes",
@@ -464,7 +464,7 @@ const actions: Omit<TripAction, "done" | "custom" | "tripSlug">[] = [
   },
 ];
 
-export function salvadorSeedActions(): TripAction[] {
+export function salvadorSeedActions(): Omit<TripAction, "_id">[] {
   return actions.map((action, index) => ({
     ...action,
     tripSlug: SALVADOR_TRIP.slug,
